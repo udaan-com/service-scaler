@@ -8,7 +8,7 @@ use kube::error::{ErrorResponse};
 use serde_json::{json, Value};
 use log::{info};
 use crate::crd::HpaSpec;
-use crate::util::{key, SERVICE_SCALER_MANAGED_ANNOTATION, SERVICE_SCALER_NOTE_KEY, SERVICE_SCALER_NOTE_VALUE};
+use crate::util::{K8S_AUTOSCALING_VERSION, K8S_DEPLOYMENT_VERSION, key, SERVICE_SCALER_MANAGED_ANNOTATION, SERVICE_SCALER_NOTE_KEY, SERVICE_SCALER_NOTE_VALUE};
 
 
 static DEFAULT_CPU_UTILIZATION: u32 = 80;
@@ -58,7 +58,7 @@ impl HpaOperator {
 
             let hpa = if hpa_spec.target_cpu_utilization.is_some() && hpa_spec.target_memory_utilization.is_some() {
                 serde_json::from_value(json!({
-                    "apiVersion": "autoscaling/v2beta2",
+                    "apiVersion": K8S_AUTOSCALING_VERSION,
                     "kind": "HorizontalPodAutoscaler",
                     "metadata": {
                         "name": name,
@@ -99,7 +99,7 @@ impl HpaOperator {
                     }))
             } else if hpa_spec.target_cpu_utilization.is_some() {
                 serde_json::from_value(json!({
-                    "apiVersion": "autoscaling/v2beta2",
+                    "apiVersion": K8S_AUTOSCALING_VERSION,
                     "kind": "HorizontalPodAutoscaler",
                     "metadata": {
                         "name": name,
@@ -132,7 +132,7 @@ impl HpaOperator {
                     }))
             } else {
                 serde_json::from_value(json!({
-                    "apiVersion": "autoscaling/v2beta2",
+                    "apiVersion": K8S_AUTOSCALING_VERSION,
                     "kind": "HorizontalPodAutoscaler",
                     "metadata": {
                         "name": name,
@@ -224,7 +224,7 @@ impl HpaOperator {
             metrics: Some(metrics.to_vec()),
             min_replicas: Some(hpa_spec.min_replicas),
             scale_target_ref: CrossVersionObjectReference {
-                api_version: Some("apps/v2beta2".to_string()),
+                api_version: Some(K8S_DEPLOYMENT_VERSION.to_string()),
                 kind: "Deployment".to_string(),
                 name: name.to_string(),
             },

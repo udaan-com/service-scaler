@@ -22,6 +22,10 @@ pub const SERVICE_SCALER_MANAGED_ANNOTATION: &str = "service-scaler.kubernetes.i
 pub const SERVICE_SCALER_NOTE_KEY: &str = "service-scaler.kubernetes.io/note";
 pub const SERVICE_SCALER_NOTE_VALUE: &str = "DO-NOT-EDIT-THIS--EDIT-SERVICE-SCALER-INSTEAD";
 
+// kubernetes api versions
+pub const K8S_AUTOSCALING_VERSION: &str = "autoscaling/v2beta2";
+pub const K8S_DEPLOYMENT_VERSION: &str = "apps/v2beta2";
+
 pub fn key(namespace: &str, name: &str) -> String {
     return [namespace, name].join("/");
 }
