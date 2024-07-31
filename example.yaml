@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-bee-service
+  namespace: dev
+  labels:
+    app: dummy-bee-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.14.2
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: scaler.udaan.io/v1
+kind: ServiceScaler
+metadata:
+  name: dummy-bee-service
+  namespace: dev
+spec:
+  hpa:
+    maxReplicas: 25
+    minReplicas: 3
+    targetCPUUtilization: 80
+    targetMemoryUtilization: 80
+  timeRangeSpec:
+    - from: 18:00+05:30
+      kind: ZonedTime
+      replicaSpec:
+        hpa:
+          minReplicas: 2
+          targetMemoryUtilization: 0
+      to: 00:00+05:30
+    - from: 00:00+05:30
+      kind: ZonedTime
+      replicaSpec:
+        hpa:
+          minReplicas: 1
+          targetMemoryUtilization: 0
+      to: 08:00+05:30
