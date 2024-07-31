@@ -90,7 +90,7 @@ enum ServiceScalerAction {
 }
 
 fn classify_action(service_scaler: &ServiceScaler) -> ServiceScalerAction {
-    return if service_scaler.meta().deletion_timestamp.is_some() {
+    if service_scaler.meta().deletion_timestamp.is_some() {
         ServiceScalerAction::Delete
     } else if service_scaler.meta()
         .finalizers
@@ -100,7 +100,7 @@ fn classify_action(service_scaler: &ServiceScaler) -> ServiceScalerAction {
         ServiceScalerAction::Create
     } else {
         ServiceScalerAction::Update
-    };
+    }
 }
 
 async fn reconcile(service_scaler: Arc<ServiceScaler>, context: Arc<ContextData>) -> Result<Action, Error> {
@@ -118,11 +118,11 @@ async fn reconcile(service_scaler: Arc<ServiceScaler>, context: Arc<ContextData>
     let name = service_scaler.name_any();
     let hpa_operator = HpaOperator { client: client.clone() };
     let scale_operator = Scale { hpa_operator: hpa_operator.clone() };
-    return match classify_action(&service_scaler) {
+    match classify_action(&service_scaler) {
         ServiceScalerAction::Create => {
             finalizer::add(client.clone(), &namespace, &name).await?;
             info!("[{}] added finalizers!", key(&namespace, &name));
-            hpa_operator.create(&namespace, &name, &service_scaler.spec.hpa, &service_scaler.meta()).await?;
+            hpa_operator.create(&namespace, &name, &service_scaler.spec.hpa, service_scaler.meta()).await?;
             info!("[{}] Reconciled object! action: {}",  key(&namespace, &name), "CREATE");
             Ok(Action::requeue(Duration::from_secs(RECONCILIATION_PERIOD)))
         }
@@ -147,7 +147,7 @@ async fn reconcile(service_scaler: Arc<ServiceScaler>, context: Arc<ContextData>
 
             Ok(Action::requeue(Duration::from_secs(RECONCILIATION_PERIOD)))
         }
-    };
+    }
 }
 
 /// Actions to be taken when a reconciliation fails - for whatever reason.

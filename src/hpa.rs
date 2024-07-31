@@ -21,13 +21,13 @@ pub struct HpaOperator {
 impl HpaOperator {
     pub async fn get(&self, namespace: &str, name: &str) -> Result<HorizontalPodAutoscaler, Error> {
         let api: Api<HorizontalPodAutoscaler> = Api::namespaced(self.client.clone(), namespace);
-        return api.get(name).await;
+        api.get(name).await
     }
 
     pub async fn create(&self, namespace: &str, name: &str, hpa_spec: &HpaSpec, service_scaler_metadata: &ObjectMeta) -> Result<HorizontalPodAutoscaler, Error> {
         let api: Api<HorizontalPodAutoscaler> = Api::namespaced(self.client.clone(), namespace);
         let existing = api.get(name).await;
-        return if existing.is_ok() {
+        if existing.is_ok() {
             info!("[{}] hpa already exists!", key(namespace, name));
             // add service scaler managed annotation
             let annotations_patch: Value = json!({
@@ -166,9 +166,9 @@ impl HpaOperator {
             };
             let res = api.create(&PostParams::default(), &hpa.unwrap()).await;
             info!("[{}] hpa created!", key(namespace, name));
-            self.patch_metadata(namespace, name, &service_scaler_metadata, None).await.expect("patch_metadata errored!");
+            self.patch_metadata(namespace, name, service_scaler_metadata, None).await.expect("patch_metadata errored!");
             res
-        };
+        }
     }
 
 
@@ -239,7 +239,7 @@ impl HpaOperator {
         let patch = Patch::Merge(&hpa_patch);
         let res = api.patch(name, &PatchParams::default(), &patch).await;
         info!("[{}] patched hpa!", key(namespace, name));
-        return res;
+        res
     }
 
     pub async fn delete(&self, namespace: &str, name: &str) {
@@ -250,7 +250,7 @@ impl HpaOperator {
                 // Object is already deleted
                 Error::Api(ErrorResponse { code: 404, .. }) => Ok(()),
                 err => Err(err),
-            }).expect(format!("[{}] deletion errored!", key(namespace, name)).as_str());
+            }).unwrap_or_else(|_| panic!("[{}] deletion errored!", key(namespace, name)));
         info!("[{}] hpa deleted!", key(namespace, name));
     }
 

@@ -48,7 +48,7 @@ impl Scale {
         let target_cpu_util_equivalence = cpu_util == target_hpa_spec.target_cpu_utilization;
         let target_mem_util_equivalence = mem_util == target_hpa_spec.target_memory_utilization;
 
-        return min_replicas_equivalence && max_replicas_equivalence && target_cpu_util_equivalence && target_mem_util_equivalence;
+        min_replicas_equivalence && max_replicas_equivalence && target_cpu_util_equivalence && target_mem_util_equivalence
     }
 
 
@@ -65,7 +65,7 @@ impl Scale {
                 // someone directly deletes hpa, create it back
                 info!("[{}] accidental hpa deletion detected! recreating hpa with default spec!", key(namespace, name));
                 // assuming create does not break
-                self.hpa_operator.create(namespace, name, &service_scaler.spec.hpa, &service_scaler.meta()).await.unwrap()
+                self.hpa_operator.create(namespace, name, &service_scaler.spec.hpa, service_scaler.meta()).await.unwrap()
             }
         };
 
@@ -95,7 +95,7 @@ impl Scale {
 
         // minReplicas step shenanigans
         let curr_min_replicas = hpa.spec.clone().unwrap().min_replicas.unwrap();
-        if !hpa_override_spec.min_replicas.is_some() {
+        if hpa_override_spec.min_replicas.is_none() {
             hpa_override_spec.min_replicas = Some(default_hpa_spec.max_replicas)
         }
         hpa_override_spec.min_replicas = Some(step(curr_min_replicas, default_hpa_spec.min_replicas, hpa_override_spec.min_replicas.unwrap(), &service_scaler.spec.time_range_spec, false).unwrap());
@@ -103,33 +103,25 @@ impl Scale {
 
         //maxReplicas step shenanigans
         let curr_max_replicas = hpa.spec.clone().unwrap().max_replicas;
-        if !hpa_override_spec.max_replicas.is_some() {
+        if hpa_override_spec.max_replicas.is_none() {
             hpa_override_spec.max_replicas = Some(default_hpa_spec.max_replicas)
         }
         hpa_override_spec.max_replicas = Some(step(curr_max_replicas, default_hpa_spec.max_replicas, hpa_override_spec.max_replicas.unwrap(), &service_scaler.spec.time_range_spec, true).unwrap());
         info!("[{}] maxReplicas - from:{} to:{}", key(namespace, name), curr_max_replicas, hpa_override_spec.max_replicas.unwrap());
         // targetCPUUtil
-        if !hpa_override_spec.target_cpu_utilization.is_some() {
-            if default_hpa_spec.target_cpu_utilization.is_some() {
-                hpa_override_spec.target_cpu_utilization = default_hpa_spec.target_cpu_utilization
-            }
+        if hpa_override_spec.target_cpu_utilization.is_none() && default_hpa_spec.target_cpu_utilization.is_some() {
+            hpa_override_spec.target_cpu_utilization = default_hpa_spec.target_cpu_utilization
         }
-        if hpa_override_spec.target_cpu_utilization.is_some() {
-            if hpa_override_spec.target_cpu_utilization.unwrap() == 0 {
-                hpa_override_spec.target_cpu_utilization = None
-            }
+        if hpa_override_spec.target_cpu_utilization.is_some() && hpa_override_spec.target_cpu_utilization.unwrap() == 0 {
+            hpa_override_spec.target_cpu_utilization = None
         }
 
         // targetMemoryUtil
-        if !hpa_override_spec.target_memory_utilization.is_some() {
-            if default_hpa_spec.target_memory_utilization.is_some() {
-                hpa_override_spec.target_memory_utilization = default_hpa_spec.target_memory_utilization
-            }
+        if hpa_override_spec.target_memory_utilization.is_none() && default_hpa_spec.target_memory_utilization.is_some() {
+            hpa_override_spec.target_memory_utilization = default_hpa_spec.target_memory_utilization
         }
-        if hpa_override_spec.target_memory_utilization.is_some() {
-            if hpa_override_spec.target_memory_utilization.unwrap() == 0 {
-                hpa_override_spec.target_memory_utilization = None
-            }
+        if hpa_override_spec.target_memory_utilization.is_some() && hpa_override_spec.target_memory_utilization.unwrap() == 0 {
+            hpa_override_spec.target_memory_utilization = None
         }
 
         // early exit
@@ -146,6 +138,6 @@ impl Scale {
             target_memory_utilization: hpa_override_spec.target_memory_utilization,
         }).await;
         patch_status(self.hpa_operator.client.clone(), namespace, name, range_match.is_some(), "patch", &hpa_override_spec).await.expect("patch_status errored!");
-        return res;
+        res
     }
 }

@@ -27,7 +27,7 @@ pub const K8S_AUTOSCALING_VERSION: &str = "autoscaling/v2beta2";
 pub const K8S_DEPLOYMENT_VERSION: &str = "apps/v2beta2";
 
 pub fn key(namespace: &str, name: &str) -> String {
-    return [namespace, name].join("/");
+    [namespace, name].join("/")
 }
 
 fn parse_zoned_time_str(ts: &str) -> DateTime<FixedOffset> {
@@ -36,17 +36,17 @@ fn parse_zoned_time_str(ts: &str) -> DateTime<FixedOffset> {
 }
 
 fn parse_zoned_date_time_str(ts: &str) -> DateTime<FixedOffset> {
-    return DateTime::parse_from_rfc3339(ts).expect("Failed to parse from ZonedDateTime");
+    DateTime::parse_from_rfc3339(ts).expect("Failed to parse from ZonedDateTime")
 }
 
 pub fn timestamp_match(from: &str, to: &str, kind: &TimeRangeType) -> bool {
     let curr_ts = Local::now().fixed_offset();
-    return match kind {
+    match kind {
         TimeRangeType::ZonedTime => {
             let from_ts = parse_zoned_time_str(from);
             let mut to_ts = parse_zoned_time_str(to);
             if to_ts < from_ts {
-                to_ts = to_ts + Duration::days(1);
+                to_ts += Duration::days(1);
             }
             info!("Trying from_ts:{} curr_ts:{} to_ts:{}", from_ts, curr_ts, to_ts);
             (curr_ts > from_ts) && (curr_ts < to_ts)
@@ -54,19 +54,19 @@ pub fn timestamp_match(from: &str, to: &str, kind: &TimeRangeType) -> bool {
         TimeRangeType::ZonedDateTime => {
             let from_ts = parse_zoned_date_time_str(from);
             let to_ts = parse_zoned_date_time_str(to);
-            return (curr_ts > from_ts) && (curr_ts < to_ts);
+            (curr_ts > from_ts) && (curr_ts < to_ts)
         }
-    };
+    }
 }
 
 fn diff_from_now(ts: &str, kind: &TimeRangeType) -> i64 {
     // get current time
     let curr_ts = Local::now().fixed_offset();
-    return match kind {
+    match kind {
         TimeRangeType::ZonedTime => {
             let mut ts = parse_zoned_time_str(ts);
             if ts < curr_ts {
-                ts = ts + Duration::days(1);
+                ts += Duration::days(1);
             }
             (ts - curr_ts).num_seconds()
         }
@@ -74,7 +74,7 @@ fn diff_from_now(ts: &str, kind: &TimeRangeType) -> i64 {
             let ts = parse_zoned_date_time_str(ts);
             (ts - curr_ts).num_seconds()
         }
-    };
+    }
 }
 
 /// determines the "jump" factor and the next nearest target minReplicas/maxReplicas according to the distance from the nearest matching interval
@@ -95,14 +95,12 @@ pub fn determine_next_target(default: i32, time_range_spec: &Vec<TimeRangeSpec>,
                     next_nearest_target = time_range.replica_spec.hpa.max_replicas
                 }
             }
-        } else {
-            if diff_from_to < min_diff {
-                min_diff = diff_from_to;
-                next_nearest_target = Some(default)
-            }
+        } else if diff_from_to < min_diff {
+            min_diff = diff_from_to;
+            next_nearest_target = Some(default)
         }
     }
-    return ((min_diff / RECONCILIATION_PERIOD as i64).max(1i64) as i32, next_nearest_target);
+    ((min_diff / RECONCILIATION_PERIOD as i64).max(1i64) as i32, next_nearest_target)
 }
 
 
@@ -113,7 +111,7 @@ pub fn determine_next_target(default: i32, time_range_spec: &Vec<TimeRangeSpec>,
 /// ramp-up/down duration: 30min ~(6 intervals)
 pub fn step(curr: i32, default: i32, fallback: i32, time_range_spec: &Vec<TimeRangeSpec>, is_max: bool) -> Result<i32, Error> {
     let (jump_interval, next_target) = determine_next_target(default, time_range_spec, is_max);
-    if !next_target.is_some() {
+    if next_target.is_none() {
         warn!("unable to determine next nearest target falling back to default!");
         return Ok(default);
     }
@@ -129,11 +127,11 @@ pub fn step(curr: i32, default: i32, fallback: i32, time_range_spec: &Vec<TimeRa
     }
 
     let step = (next_target.unwrap() - curr) / jump_interval;
-    return if curr > next_target.unwrap() {
+    if curr > next_target.unwrap() {
         Ok((curr + step).max(next_target.unwrap()))
     } else {
         Ok((curr + step).min(next_target.unwrap()))
-    };
+    }
 }
 
 pub async fn patch_status(client: Client, namespace: &str, name: &str, time_range_match: bool, _action: &str, hpa_spec: &HpaOverrideSpec) -> Result<(), Error> {
@@ -143,7 +141,7 @@ pub async fn patch_status(client: Client, namespace: &str, name: &str, time_rang
         Ok(service_scaler) => {
             let mut patch = service_scaler.clone();
             patch.status = Some(ServiceScalerStatus {
-                time_range_match: time_range_match,
+                time_range_match,
                 last_observed_generation: service_scaler.meta().generation,
                 last_known_config: hpa_spec.clone(),
                 last_updated_time: curr_ts.format("%Y-%m-%dT%H:%MZ%z").to_string(),
