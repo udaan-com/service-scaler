@@ -114,11 +114,11 @@ kubectl --context=<context> apply -f example.yaml
 - Do not specify “overlapping” time ranges as this will result in undefined behaviour.
 - Refer [architecture diagram](architecture.png) to understand the mechanics of the operator.
 - Battle-tested on kubernetes 1.16 and 1.22.
-- For newer kubernetes clusters 
+- For newer kubernetes clusters (Ex: 1.30)
   - pin the following versions for ``kube`` and ``k8s-openapi``
     ```toml 
     kube = { version = "0.93.1", default-features = true, features = ["derive", "runtime", "config"]}
-    k8s-openapi = { version = "0.20.0", features = ["latest"]} 
+    k8s-openapi = { version = "0.22.0", features = ["latest"]} 
     ```
   - migrate from ``autoscaling/v2beta2`` to ``autoscaling/v2``
   - migrate from ``apps/v2beta2`` to ``apps/v1``
