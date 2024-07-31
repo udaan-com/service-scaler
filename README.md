@@ -66,7 +66,7 @@ For those rare instances when things might not go as planned, a kill switch has 
     scaleTargetRef:
       apiVersion: apps/v2beta2
       kind: Deployment
-      name: orderflow-gateway-service
+      name: dummy-acorn-service
     targetCPUUtilizationPercentage: 50
   ```
 Once the above annotation is added, time based scaling is disabled for ``dummy-acorn-service``, users are expected to manually set hpa parameters of their choice.
